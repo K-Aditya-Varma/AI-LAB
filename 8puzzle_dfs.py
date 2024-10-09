@@ -1,77 +1,74 @@
 from collections import deque
-def find_blank(state):
+import time
+
+goal_state = [[1, 2, 3], 
+              [4, 5, 6], 
+              [7, 8, 0]]
+
+def find_zero(state):
     for i in range(3):
         for j in range(3):
             if state[i][j] == 0:
-                return i, j
-                
-def generate_moves(state):
-    x, y = find_blank(state)
-    moves = []
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-    for dx, dy in directions:
-        nx, ny = x + dx, y + dy
-        if 0 <= nx < 3 and 0 <= ny < 3:
-            new_state = [row[:] for row in state]
-            new_state[x][y], new_state[nx][ny] = new_state[nx][ny], new_state[x][y]
-            moves.append(new_state)
-    return moves
-    
-def bfs(initial_state, goal_state):
-    visited = set()
-    queue = deque([(initial_state, [])])
-    while queue:
-        state, path = queue.popleft()
-        visited.add(tuple(map(tuple, state)))
-        if state == goal_state:
-            return path
-        for next_state in generate_moves(state):
-            if tuple(map(tuple, next_state)) not in visited:
-                queue.append((next_state, path + [next_state]))
-    return None
+                return (i, j)
 
-def dfs(initial_state, goal_state):
-    visited = set()
+def move(state, direction):
+    new_state = [row[:] for row in state]
+    zero_pos = find_zero(state)
+    i, j = zero_pos
+    if direction == "up" and i > 0:
+        new_state[i][j], new_state[i-1][j] = new_state[i-1][j], new_state[i][j]
+    elif direction == "down" and i < 2:
+        new_state[i][j], new_state[i+1][j] = new_state[i+1][j], new_state[i][j]
+    elif direction == "left" and j > 0:
+        new_state[i][j], new_state[i][j-1] = new_state[i][j-1], new_state[i][j]
+    elif direction == "right" and j < 2:
+        new_state[i][j], new_state[i][j+1] = new_state[i][j+1], new_state[i][j]
+    else:
+        return None
+
+    return new_state
+
+def is_goal(state):
+    return state == goal_state
+
+def print_state(state):
+    for row in state:
+        print(row)
+    print("\n")
+
+def dfs(initial_state):
     stack = [(initial_state, [])]
+    visited = set()
     while stack:
         state, path = stack.pop()
-        visited.add(tuple(map(tuple, state)))
-        if state == goal_state:
+        print("Exploring state in DFS:")
+        print_state(state)
+        if is_goal(state):
             return path
-        for next_state in generate_moves(state):
-            if tuple(map(tuple, next_state)) not in visited:
-                stack.append((next_state, path + [next_state]))
+        visited.add(str(state))
+        for direction in ["up", "down", "left", "right"]:
+            new_state = move(state, direction)
+            if new_state and str(new_state) not in visited:
+                stack.append((new_state, path + [direction]))
     return None
 
-def print_solution(solution):
-    if solution:
-        for step, state in enumerate(solution):
-            print(f"Step {step + 1}:")
-            for row in state:
-                print(row)
-            print()
+def get_initial_state():
+    print("Enter the initial state of the 8-puzzle (0 for empty space):")
+    initial_state = []
+    for i in range(3):
+        row = list(map(int, input(f"Enter row {i+1} (space-separated): ").strip().split()))
+        if len(row) != 3:
+            raise ValueError("Each row must contain exactly 3 numbers.")
+        initial_state.append(row)
+    return initial_state
+
+if __name__ == "__main__":
+    initial_state = get_initial_state()
+    print("Initial State:")
+    print_state(initial_state)
+    print("Solving using DFS:")
+    dfs_solution = dfs(initial_state)
+    if dfs_solution:
+        print("DFS Solution:", dfs_solution)
     else:
-        print("No solution found.")
-
-initial_state = [[1, 2, 3],
-                 [4, 7, 5],
-                 [6, 0, 8]]
-
-goal_state = [[1, 2, 3],
-              [4, 5, 6],
-              [7, 8, 0]]
-
-print("Solving using BFS:")
-bfs_solution = bfs(initial_state, goal_state)
-if bfs_solution:
-    print("BFS Solution found in", len(bfs_solution), "steps.")
-    print_solution(bfs_solution)
-else:
-    print("No solution found using BFS.")
-print("Solving using DFS:")
-dfs_solution = dfs(initial_state, goal_state)
-if dfs_solution:
-    print("DFS Solution found in", len(dfs_solution), "steps.")
-    print_solution(dfs_solution)
-else:
-    print("No solution found using DFS.")
+        print("No solution found with DFS.")
